@@ -5,7 +5,7 @@ import cv2
 model = YOLO("yolov8n.pt")   # 'n' = nano, fastest
 
 # running inference 
-results = model("backend/samples/frame1.jpg", conf=0.5)
+results = model("samples/frame2.jpg", conf=0.5)
 
 for r in results:
     for box in r.boxes:
