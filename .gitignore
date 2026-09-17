@@ -144,3 +144,14 @@ vite.config.ts.timestamp-*
 
 # Config files
 venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Scratch / generated artifacts
+backend/output.jpg
+
+# SQLite database (created at runtime)
+*.db
+*.db-journal
