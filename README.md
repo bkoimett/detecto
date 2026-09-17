@@ -122,9 +122,9 @@ touching any ML code.
 | Detection      | YOLOv8n (Ultralytics), OpenCV, NumPy, Pillow  |
 | Backend        | FastAPI, Uvicorn, SQLAlchemy, Pydantic        |
 | Database       | SQLite                                        |
-| Frontend       | React 18, Vite, Axios, React Router           |
-| Styling        | Tailwind CSS                                  |
-| Config         | python-dotenv (`backend/.env`)                |
+| Frontend       | React 19, Vite, Axios, React Router         |
+| Styling        | Tailwind CSS                                |
+| Config         | python-dotenv (root `.env`), Vite env (`.env`)|
 
 ---
 
@@ -132,12 +132,30 @@ touching any ML code.
 
 ```
 detecto/
+├── .env.example              # MODEL_PATH, CONFIDENCE_THRESHOLD, DB_PATH
+├── backend/
+│   ├── main.py
+│   ├── config.py             # env loading + path resolution
+│   ├── routes/
+│   │   ├── detect.py
+│   │   └── history.py
+│   ├── models/
+│   │   ├── record.py         # SQLAlchemy model + engine
+│   │   └── schemas.py        # Pydantic DTOs
+│   ├── utils/
+│   │   └── preprocessing.py
+│   ├── samples/
+│   │   ├── frame1.jpg
+│   │   └── ...
+│   ├── requirements.txt
+│   └── yolov8n.pt            # model weights
+│
 ├── frontend/
 │   ├── public/
 │   │   └── samples/
 │   │       ├── frame1.jpg
 │   │       ├── frame2.jpg
-│   │       └── ... (10+ images)
+│   │       └── frame3.jpg
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Navbar.jsx
@@ -147,26 +165,11 @@ detecto/
 │   │   │   └── HistoryView.jsx
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── .env
+│   ├── .env.example          # VITE_API_URL
 │   ├── package.json
 │   └── vite.config.js
 │
-├── backend/
-│   ├── main.py
-│   ├── routes/
-│   │   ├── detect.py
-│   │   └── history.py
-│   ├── models/
-│   │   └── record.py
-│   ├── utils/
-│   │   └── preprocessing.py
-│   ├── samples/
-│   │   ├── frame1.jpg
-│   │   └── ...
-│   ├── .env
-│   └── detections.db
-│
-├── requirements.txt
+├── detections.db             # SQLite (created at runtime)
 ├── README.md
 └── .gitignore
 ```
@@ -195,32 +198,29 @@ cd detecto
 
 ### 2. Backend Setup
 
-```bash
-cd backend
+Run from the repository root (`backend/` is a Python package):
 
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate          # macOS / Linux
-# venv\Scripts\activate           # Windows
+```bash
+# Create and activate virtual environment (one-time)
+python -m venv backend/venv
+source backend/venv/bin/activate          # macOS / Linux
+# backend\venv\Scripts\activate           # Windows
 
 # Install dependencies
-pip install -r ../requirements.txt
+pip install -r backend/requirements.txt
 
-# Create environment file
-cat > .env <<EOF
-MODEL_PATH=yolov8n.pt
-CONFIDENCE_THRESHOLD=0.5
-DB_PATH=detections.db
-EOF
+# Create environment file (see .env.example)
+cp .env.example .env
 
 # Run the API
-uvicorn main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8000
 ```
 
 The backend will be available at **http://localhost:8000**
 Interactive docs: **http://localhost:8000/docs**
 
-> 💡 On first run, the YOLOv8n model (~6 MB) is downloaded automatically.
+> 💡 On first run, the YOLOv8n model (~6 MB) is downloaded automatically, or
+> place your own `yolov8n.pt` in `backend/` to skip the download.
 
 ---
 
@@ -234,10 +234,8 @@ cd frontend
 # Install dependencies
 npm install
 
-# Create environment file
-cat > .env <<EOF
-VITE_API_URL=http://localhost:8000
-EOF
+# Create environment file (see .env.example)
+cp .env.example .env
 
 # Run the dev server
 npm run dev
@@ -257,7 +255,7 @@ The frontend will be available at **http://localhost:5173**
 
 ---
 
-### `requirements.txt`
+### `backend/requirements.txt`
 
 ```txt
 fastapi
@@ -293,9 +291,12 @@ Upload an image and receive detection results.
   ],
   "inference_time_ms": 412.5,
   "avg_confidence": 0.87,
-  "annotated_image_b64": "data:image/jpeg;base64,/9j/4AAQ..."
+  "annotated_image_b64": "/9j/4AAQ..."
 }
 ```
+
+The annotated image is a **bare base64-encoded JPEG** — the frontend prepends
+the `data:image/jpeg;base64,` prefix when rendering it in an `<img>` tag.
 
 **Errors:**
 - `400` — unsupported file type or empty upload
