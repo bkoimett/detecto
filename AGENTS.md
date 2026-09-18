@@ -34,7 +34,7 @@ Frontend (all commands run inside `frontend/`):
 - `frontend/src/lib/api.js` — axios API client + `useMock` flag; every request goes through here
 - `frontend/src/lib/mock.js` — mock data generators for all API calls (used when `VITE_USE_MOCK=true`)
 - `frontend/src/main.jsx` — React root (imports only `index.css`)
-- `frontend/src/index.css` — just `@import "tailwindcss"` — no custom tokens
+- `frontend/src/index.css` — `@theme` tokens (palette + font families) and `@layer components` recipes (`.sheet`, `.btn-*`, `.monitor`, `.field`, `.pill-signal`, `.badge-mock`, `.scanline`, `.rec-dot`)
 - `frontend/src/App.css` — leftover Vite scaffold, NOT imported anywhere — never use it
 - `frontend/vite.config.js` — `react()` + `tailwindcss()` plugins
 - `frontend/public/samples/` — demo images served by the app
@@ -55,8 +55,10 @@ Frontend `frontend/.env`:
 
 ## DEPLOYMENT
 
+- Full step-by-step walkthrough + cost/troubleshooting breakdown: `HOSTING.md` at repo root
 - Frontend: Vite static build → Vercel; `frontend/vercel.json` rewrites all paths to `index.html` for SPA routing
-- Backend: `render.yaml` at repo root (Render web service, Python runtime, `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`); SQLite persisted on a 1 GB disk at `/var/data`
+- Backend: `render.yaml` at repo root (Render web service, Python runtime, `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`); the committed `render.yaml` uses a persistent disk at `/var/data` and therefore requires a paid plan — free-tier deploys must drop the disk block and use a relative `DB_PATH`
+- Keep backend at 1 instance: `CentroidTracker` state is in-process and SQLite is single-writer
 - Set `FRONTEND_ORIGINS` on the deployed backend to include the real Vercel domain (CORS)
 - Set `VITE_API_URL` in Vercel to the deployed backend URL (build-time env)
 
@@ -115,5 +117,5 @@ Frontend `frontend/.env`:
 
 - Always follow the UI design system when creating or reviewing components or pages
 - Design System: @DESIGN.md
-- The current system is intentionally minimal (default Tailwind classes, light theme, emoji icons) — do not introduce elaborate custom design systems without asking
+- The system is a light "vision sheet" identity (cool pale-blue paper, Space Grotesk + IBM Plex Mono, phosphor-green accent matching the YOLO boxes) — follow it and @DESIGN.md precisely; do not introduce a different design system without asking
 - Keep this file and @DESIGN.md in sync with the actual codebase — update them as part of any change that alters stack, structure, or conventions, don't let them drift

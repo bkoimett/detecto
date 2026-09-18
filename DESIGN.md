@@ -2,81 +2,73 @@
 
 This document defines the visual design system for Detecto. All components and pages must follow these conventions.
 
-The system is intentionally minimal: Tailwind CSS v4 default theme, light color scheme, emoji icons, and stock utility classes only. Do not introduce elaborate custom design systems (custom tokens, icon libraries, fonts, dark mode) without asking.
+The system is a **light "vision sheet"** identity: a cool pale-blue graph-paper field, Space Grotesk for the voice, IBM Plex Mono for figures, and a single phosphor-green accent that matches the detection boxes the backend draws (`(0,255,0)`), with amber reserved for zones (`(255,165,0)`). It deliberately avoids default SaaS patterns: no shadowed card rows, no all-caps eyebrows, no emoji icons, no gradient washes.
 
 ---
 
 ## Stack
 
 - **Framework:** Vite + React 19 (JSX)
-- **Styling:** Tailwind CSS v4 (default theme via `@import "tailwindcss"` in `index.css` — no `@theme` block, no CSS custom properties)
-- **Icons:** emoji glyphs — no icon library
-- **Fonts:** Tailwind default font stack — no web fonts
-- **Dark mode:** none — light theme only
+- **Styling:** Tailwind CSS v4. Design tokens live in the `@theme` block of `index.css`; component recipes (`.sheet`, `.btn-*`, `.monitor`, `.field`, `.pill-signal`, `.badge-mock`, `.scanline`, `.rec-dot`) live in `@layer components`.
+- **Fonts:** two web fonts via Google Fonts `<link>` in `index.html`:
+  - `Space Grotesk` (400–700) → `--font-sans` (everything UI)
+  - `IBM Plex Mono` (400, 500) → `--font-mono` (numeric readouts, timestamps, filenames)
+- **Icons:** no icon library and no emoji. The only graphic is the `Mark` detection-target emblem (`components/Mark.jsx`) and the SVG favicon based on the same mark.
+- **Dark mode:** none — light theme only.
 
 ---
 
 ## Colors
 
-All colors are Tailwind default palette utility classes applied inline in JSX. There are no design tokens.
+Defined as Tailwind v4 `@theme` tokens. Use the semantic utilities (`bg-paper`, `text-ink`, `border-line`, `bg-vision`, …), never raw hex.
 
-| Class | Usage |
-|---|---|
-| `bg-gray-50` | Page background (`<main>`) |
-| `bg-white` | Navbar, cards, table, stat cards |
-| `bg-blue-600` | Primary buttons, active nav link, navbar brand text |
-| `text-white` | Text on blue/red buttons, active nav link |
-| `bg-red-600` / `hover:bg-red-700` | Destructive actions (Reset) |
-| `text-red-600` | Error messages |
-| `bg-gray-700` | Stop Camera button |
-| `bg-gray-100` | Table header row |
-| `bg-black/60` | "Waiting for first frame…" overlay pill |
-| `text-gray-500` | Muted/secondary text, empty-state text |
-| `text-gray-700` | Labels |
-| `text-gray-900` | Headings, stat values |
-| `hover:bg-gray-200` | Nav link hover state |
-| `even:bg-gray-50` | Zebra striping on table rows |
-| `bg-amber-100` / `text-amber-700` | Mock data badge |
-| `border-amber-500` / `text-amber-600` | Clear-zone pill button |
+| Token | Hex | Usage |
+|---|---|---|
+| `paper` | `#eef2f7` | Page background (cool pale blue, ~ice blueprint) |
+| `surface` | `#ffffff` | Sheets, panels, inputs |
+| `ink` | `#15233b` | Primary text, active nav, primary-on ink buttons, tab active |
+| `ink-soft` | `#55667f` | Secondary text, labels |
+| `ink-faint` | `#8a99af` | Chart hour labels, dim readouts |
+| `line` | `#d9e1ec` | Hairline borders, dividers |
+| `line-strong` | `#bfccdd` | Input borders, chart baseline |
+| `vision` | `#0e9f62` | THE accent — matches YOLO boxes: monitor brackets, bars, dots, links |
+| `vision-strong` | `#0b7a48` | Primary buttons (white text) |
+| `vision-deep` | `#085f38` | Primary button hover, bar hover |
+| `vision-tint` | `#e2f4ea` | Pale green fills (status notes) |
+| `signal` | `#b45309` | Amber alert text — matches zone rect `(255,165,0)` |
+| `signal-tint` | `#fdf3e1` | Amber alert/badge fills |
+| `alert` | `#dc2626` | Errors, destructive actions |
+| `alert-tint` | `#fdecec` | Error panel fills |
 
 ## Typography
 
-Default Tailwind typography classes only. No custom fonts or type scale.
-
-| Class | Usage |
-|---|---|
-| `text-xl font-bold` | Navbar brand |
-| `text-2xl font-bold` | Page headings (`h1`) |
-| `text-lg font-bold` | Stat card values |
-| `text-sm font-medium` | Nav links, min-confidence labels |
-| `text-xs uppercase tracking-wide text-gray-500` | Stat card labels |
-| `text-xs text-gray-500` | Secondary notes (selected-file hint) |
+- Base: `Space Grotesk` via `--font-sans`. Headings `font-semibold tracking-tight`, sentence case, no all-caps eyebrows.
+- Figures: `IBM Plex Mono` (`--font-mono`), `font-medium tabular-nums` for stat readouts, timestamps, file names, chart labels.
+- Labels are always Grotesk with lowercase sentence case (`text-xs text-ink-soft`). Mono is reserved for actual data, never decorative micro-labels.
 
 ---
 
-## Spacing & Layout
+## Surfaces & Layout
 
-- Standard Tailwind spacing scale (`p-*`, `px-*`, `py-*`, `m-*`, `gap-*`).
-- Content wrapper: `max-w-4xl mx-auto p-6` on both pages.
-- Cards/stats row: `flex flex-wrap gap-4`.
+- Content wrapper: `mx-auto max-w-5xl px-6 py-10` on both pages. Everything left-aligned.
+- Page header: `h1` `text-3xl font-semibold tracking-tight` + one `text-sm text-ink-soft` subtitle line (+ `badge-mock` on the right when `useMock`).
+- Sheet = the only panel primitive: `border border-line rounded-[10px] bg-surface`.
+- Readout strip = one sheet, `grid grid-cols-3 divide-x divide-line` (4 cols on History), cells `px-6 py-4`, each holding a `StatsCard`. No individual cards, no shadows.
+- Background: `body` paints `--color-paper` plus a faint 28px ruled grid (`linear-gradient` hairlines at 3% ink).
 
----
+## Components (recipe classes in `index.css`)
 
-## Border Radius
+- `.sheet` — base panel.
+- `.btn` / `.btn-primary` (green, white text) / `.btn-ink` (dark) / `.btn-outline` (hairline) / `.btn-danger` (red outline, fills red on hover) — all `rounded-[8px]`, `:disabled` at 50% opacity.
+- `.field` — number/text inputs: hairline border, focused = `border-vision` + 2px green ring.
+- `.monitor` — the hero: a sheet wrapped by two green corner brackets (top-left / bottom-right, via `::before/::after`). Used on the Photo tab and the Live feed.
+- `.scanline` — a green sweep across the monitor while an image is being scanned.
+- `.rec-dot` — pulsing red dot shown with the `REC` readout while the live camera streams.
+- `.pill-signal` — amber pill (Clear zone / zone controls).
+- `.badge-mock` — dashed amber pill, mono "mock mode".
+- `.navlink` is formed inline in `Navbar.jsx`: bottom border `border-vision` when active, transparent otherwise.
 
-Default Tailwind radius utilities.
-
-| Class | Usage |
-|---|---|
-| `rounded` | Nav links, input, table |
-| `rounded-lg` | Buttons, stat cards, result image |
-| `rounded-full` | (not currently used — reserved for pills/badges) |
-
----
-
-## Shadows
-
-- `shadow` — navbar, stat cards, result image, table.
+All motion (`.scanline`, `.rec-dot`) is disabled under `prefers-reduced-motion`.
 
 ---
 
@@ -85,118 +77,81 @@ Default Tailwind radius utilities.
 ### Navbar (`components/Navbar.jsx`)
 
 ```
-bg-white shadow px-6 py-3 flex items-center gap-6
+sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur
 ```
-- Brand: `text-xl font-bold text-blue-600` + 🎯 emoji – "Detecto"
-- Nav links use `NavLink` with a `linkClass` function:
-  - Active: `bg-blue-600 text-white`
-  - Inactive: `text-gray-600 hover:bg-gray-200`
-  - Base: `px-4 py-2 rounded font-medium transition-colors`
+- Left: `Mark` (h-5 w-5) + "Detecto" (`text-lg font-semibold tracking-tight`).
+- Right: `NavLink`s labelled **Detect** and **History**, `border-b-2` underline in `vision` when active.
+
+### Mark (`components/Mark.jsx`)
+
+Detection-target emblem: rounded green box + faint crosshair + green center dot. Used in `Navbar` and as the empty-state graphic. The `favicon.svg` is the same mark.
 
 ### StatsCard (`components/StatsCard.jsx`)
 
-Props: `label`, `value`, `icon`.
+Props: `label`, `value` (no icon).
+```
+flex min-w-28 flex-col gap-1
+  label: text-xs text-ink-soft
+  value: font-mono text-2xl font-medium tabular-nums text-ink
+```
+Always used as a cell inside a readout strip sheet.
+
+### Segmented tabs (Detection View)
 
 ```
-flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-40
+inline-flex rounded-lg border border-line bg-surface p-0.5
 ```
-- Icon: `text-2xl` emoji
-- Label: `text-xs text-gray-500 uppercase tracking-wide`
-- Value: `text-lg font-bold text-gray-900`
-
-### Buttons
-
-- Primary: `px-4 py-1.5 bg-blue-600 text-white rounded font-medium disabled:opacity-50 cursor-pointer`
-- Destructive: `px-3 py-1 bg-red-600 text-white rounded font-medium hover:bg-red-700 cursor-pointer`
-- Export: primary-styled `px-3 py-1` link with `no-underline`, used with `⬇` emoji
-
-### Tabs
-
-Section switcher (Image / Live) in Detection View:
-
-```
-flex gap-2 mb-4 border-b
-```
-- Active: `bg-blue-600 text-white`
-- Inactive: `text-gray-600 hover:bg-gray-200`
-- Shared: `px-4 py-2 rounded-t font-medium cursor-pointer`
-
-### Mock badge
-
-Shown when the API layer runs on mock data (`VITE_USE_MOCK=true`):
-
-```
-text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded
-```
-
-### Live stats (LiveView)
-
-Inline stat card, same pattern as `StatsCard` minus the emoji icon:
-`flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-36`
-
-### Bar chart (History View)
-
-`per_hour` stats rendered as a flex bar chart:
-`flex items-end gap-2 h-24` with bars `bg-blue-600 rounded-t` (height % via inline style) and `text-[10px] text-gray-500` hour labels.
-
----
-
-## Live View
-
-- Camera controls: **Start Camera** (`bg-blue-600`) / **Stop Camera** (`bg-gray-700`)
-- Alert threshold: number input (`border rounded ml-2 px-2 py-1 w-16`)
-- "Clear zone" pill button: `text-xs px-3 py-1 border border-amber-500 text-amber-600 rounded font-medium`
-- Video + annotated-image overlay in a `relative inline-block` container; zone drawing on a 640×480 `<canvas>` (`absolute inset-0 cursor-crosshair`) with orange (`#f59e0b`) zone rect
-- Alert banner: `px-4 py-2 bg-red-600 text-white rounded font-semibold` with ⚠️
+- Active: `bg-ink text-surface` · Inactive: `text-ink-soft hover:text-ink`, `rounded-md px-4 py-2 text-sm`.
 
 ---
 
 ## Pages
 
-### Detection View (`/`)
+### Detect (`/`)
 
-1. `h1` heading ("Detection View") + optional mock badge
-2. Tab bar: **Image** / **Live**
-3. **Image tab:** file input + primary **Detect** button (label swaps to "Detecting..." while loading); selected-file hint, error message (`text-red-600`); on result a row of `StatsCard` (People detected 👥, Avg confidence 🎯, Inference time ⏱) then the annotated image
-   - Image: `rounded shadow border max-w-full` with src from `annotatedImage()` (`data:image/jpeg;base64,…`)
-4. **Live tab:** `<LiveView />` — webcam loop, zone drawing overlay, tracking trails (drawn server-side into the annotated image), alert banner, live stat chips
+1. Header: "Detect people" + subtitle "Upload a photo or start the live camera. Every person found is counted and logged to history." (+ mock badge)
+2. Segmented tabs **Photo** / **Live**.
+3. **Photo tab** — a `.monitor` (brackets + sheet):
+   - Empty: centered `Mark`, "No image to scan yet", "Pick a JPEG or PNG and run detection on it.", green **Choose a photo** button (opens the hidden file input).
+   - Selected, unscanned: raw preview in the sheet, then a hairline footer with the filename (`font-mono text-xs`) + **Detect people** (green) and **Change** (outline).
+   - Scanning: `.scanline` sweeps the monitor; button reads "Scanning…".
+   - Result: annotated image in the sheet, footer note in the interface voice — `<green dot> N people detected and logged` (or "No people found in this photo."). Below the monitor: a 3-cell readout strip (People found / Average confidence / Inference time) and an outline **Scan another photo**.
+4. **Live tab** — `<LiveView />`.
 
-### History View (`/history`)
+### Live (`components/LiveView.jsx`)
 
-1. `h1` heading ("History") + optional mock badge
-2. Stats panel (when loaded): row of `StatsCard` (Total detections 🕵️, Total people 👥, Avg confidence 🎯, Last hour 🕐) + "People per hour" bar chart + busiest-hour note
-3. Filter row: min-confidence number input, **⬇ Export CSV** link (downloads `/history/export`), red **Reset** button
-4. Table `w-full border bg-white rounded overflow-hidden` with `bg-gray-100` header and zebra rows, columns: Timestamp, People, Avg Conf, Inference (ms)
-5. Empty state: centered `text-gray-500` "No detections recorded yet."
+- Controls: **Start camera** (`btn-primary` green) / **Stop feed** (`btn-ink`). While streaming a `REC 640×480` readout with pulsing `.rec-dot`. "detecting…" (mono) during frame uploads.
+- **Alert threshold** number input (`.field`), amber **Clear zone** pill when a zone is set.
+- Feed in a `.monitor`: video + annotated image overlay + 640×480 zone-drawing `<canvas>` (zone stroke `#d97706`). Waiting state: "waiting for first frame…" mono pill.
+- Under the feed: readout strip (People in frame / Avg confidence / Inference) and, when a zone exists, a second strip (Inside zone / Tracked IDs).
+- **Zone alert**: amber panel (`border-signal/40 bg-signal-tint`), "!" roundel, "N people inside the restricted zone" + `threshold N` mono on the right. Errors render as `role="alert"` red panels (`border-alert/30 bg-alert-tint`), no apologies.
+
+### History (`/history`)
+
+1. Header: "History" + "Every detection the camera has logged." (+ mock badge)
+2. 4-cell readout strip (Total detections / Total people / Avg confidence / Last hour) when stats load.
+3. **Bar chart** sheet: title "People detected per hour" right-aligned busiest readout `{time} ({n} people)`; green bars on a hairline baseline (`border-b border-line-strong`), `bg-vision group-hover:bg-vision-deep`; mono hour labels underneath.
+4. Filters: **Minimum confidence** `.field`; actions **Download CSV** (`btn-outline`) and **Reset log** (`btn-danger`).
+5. **Data log** table: only hairlines (`border-t border-line`), header row `border-b bg-paper/70` with sentence-case labels; timestamps and all figures in mono `tabular-nums`; numbers right-aligned; rows `hover:bg-paper/50`.
+6. Empty log = an invitation: centered `Mark`, "No detections recorded yet", "Run a detection on the Detect page and it will show up here."
 
 ---
 
 ## Responsive
 
-- Rely on Tailwind's default breakpoints when needed.
-- Current breakpoints used: `flex-wrap` for the stats row. Layout is otherwise single-column and works at all widths with no adaptations.
-
----
-
-## Icons
-
-Emojis only. Currently in use:
-
-| Emoji | Usage |
-|---|---|
-| 🎯 | Navbar brand, Avg confidence stat |
-| 👥 | People detected stat |
-| ⏱ | Inference time stat |
-| 🕵️ | Total detections stat |
-| 🕐 | Last hour stat |
-| 🎥 | Live tab, Start Camera button |
-| 🖼 | Image tab |
-| ⬇ | Export CSV button |
-| ⚠️ | Zone alert banner |
+- History stat strip: `grid-cols-2 sm:grid-cols-4`.
+- Everything else is single-column; `flex-wrap` handles the control rows; monitor images use `max-h-[60-62vh] object-contain`.
 
 ---
 
 ## Branding
 
-- App name: **Detecto** — written as `🎯 Detecto` (`text-xl font-bold text-blue-600`) in the navbar and as the backend API title ("Detecto API" in `backend/main.py`).
-- Browser title in `frontend/index.html` is still the Vite default `frontend` — update it if branding matters.
+- App name: **Detecto** — `Mark + "Detecto"` in the navbar; API title "Detecto API" in `backend/main.py`.
+- Clear viewport title: "Detecto — Person detection & counting" in `index.html`.
+- `favicon.svg` (public) is the detection-target mark in green.
+
+---
+
+## Open items
+
+- The `zoneFromEvent` scaling in `LiveView.jsx` multiplies by 640 for both axes (existing behavior) — revisit if zone drawing drifts on non-640px displays.
