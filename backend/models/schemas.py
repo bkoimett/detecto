@@ -15,3 +15,17 @@ class DetectResponse(BaseModel):
     inference_time_ms: float
     avg_confidence: float
     annotated_image_b64: str
+
+
+class LiveDetection(Detection):
+    track_id: int | None = None
+
+
+class LiveDetectResponse(BaseModel):
+    count: int
+    detections: list[LiveDetection]
+    inference_time_ms: float
+    avg_confidence: float
+    annotated_image_b64: str
+    zone_count: int | None = None
+    zone_alert: bool | None = None
