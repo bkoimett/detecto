@@ -1,11 +1,10 @@
-export default function StatsCard({ label, value, icon }) {
+export default function StatsCard({ label, value }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-40">
-      <span className="text-2xl">{icon}</span>
-      <div>
-        <div className="text-xs text-gray-500 uppercase tracking-wide">{label}</div>
-        <div className="text-lg font-bold text-gray-900">{value}</div>
-      </div>
+    <div className="flex min-w-28 flex-col gap-1">
+      <span className="text-xs text-ink-soft">{label}</span>
+      <span className="font-mono text-2xl font-medium leading-none tabular-nums text-ink">
+        {value}
+      </span>
     </div>
   );
 }

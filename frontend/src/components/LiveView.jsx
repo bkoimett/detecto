@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import StatsCard from "./StatsCard.jsx";
 import { annotatedImage, liveDetect } from "../lib/api.js";
 
 const FRAME_MS = 1500;
@@ -131,124 +132,162 @@ export default function LiveView() {
       const [x1, y1, x2, y2] = r;
       ctx.beginPath();
       ctx.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-      ctx.strokeStyle = "#f59e0b";
+      ctx.strokeStyle = "#d97706";
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.fillStyle = "rgba(245,158,11,0.12)";
+      ctx.fillStyle = "rgba(217,119,6,0.10)";
       ctx.fill();
     });
   }, [draft, zone, result]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         {!streamOn ? (
-          <button
-            onClick={startCamera}
-            className="px-4 py-1.5 bg-blue-600 text-white rounded font-medium cursor-pointer"
-          >
-            🎥 Start Camera
+          <button onClick={startCamera} className="btn btn-primary">
+            Start camera
           </button>
         ) : (
-          <button
-            onClick={stopCamera}
-            className="px-4 py-1.5 bg-gray-700 text-white rounded font-medium cursor-pointer"
-          >
-            Stop Camera
-          </button>
+          <>
+            <button onClick={stopCamera} className="btn btn-ink">
+              Stop feed
+            </button>
+            <span className="flex items-center gap-1.5 font-mono text-xs text-ink-soft">
+              <span className="rec-dot" />
+              REC 640×480
+            </span>
+          </>
         )}
 
-        <label className="text-sm text-gray-700">
-          Alert threshold:
+        <label className="flex items-center gap-2 text-sm text-ink-soft">
+          Alert threshold
           <input
             type="number"
             min="0"
             max="30"
             value={alertThreshold}
             onChange={(e) => setAlertThreshold(Math.max(0, +e.target.value || 0))}
-            className="border rounded ml-2 px-2 py-1 w-16"
+            className="field w-16"
           />
         </label>
 
         {zone && (
-          <button
-            onClick={() => setZone(null)}
-            className="text-xs px-3 py-1 border border-amber-500 text-amber-600 rounded font-medium"
-          >
+          <button onClick={() => setZone(null)} className="pill-signal cursor-pointer">
             Clear zone
           </button>
         )}
 
-        {loading && <span className="text-xs text-gray-500">Detecting…</span>}
+        {loading && <span className="font-mono text-xs text-ink-soft">detecting…</span>}
       </div>
 
-      {cameraError && <p className="text-red-600 text-sm">{cameraError}</p>}
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {cameraError && (
+        <p role="alert" className="mb-4 rounded-lg border border-alert/30 bg-alert-tint px-4 py-3 text-sm text-alert">
+          {cameraError}
+        </p>
+      )}
+
+      {error && (
+        <p role="alert" className="mb-4 rounded-lg border border-alert/30 bg-alert-tint px-4 py-3 text-sm text-alert">
+          {error}
+        </p>
+      )}
 
       {streamOn && (
-        <div className="space-y-3">
-          <div className="relative inline-block max-w-full">
-            <video
-              ref={videoRef}
-              className="rounded shadow border max-w-full max-h-[60vh] object-contain"
-              muted playsInline
-            />
-            {result && (
-              <img
-                src={annotatedImage(result)}
-                alt="live detections"
-                className="absolute inset-0 pointer-events-none"
-                style={{ objectFit: "contain" }}
-              />
-            )}
-            {!result && (
-              <span className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                Waiting for first frame…
-              </span>
-            )}
-            <canvas
-              ref={overlayRef}
-              width={640}
-              height={480}
-              className="absolute inset-0 w-full h-full cursor-crosshair"
-              onMouseDown={onZoneDown}
-              onMouseMove={onZoneMove}
-              onMouseUp={onZoneUp}
-              onMouseLeave={onZoneUp}
-            />
+        <div>
+          <div className="monitor">
+            <div className="sheet p-2">
+              <div className="flex justify-center">
+                <div className="relative inline-block max-w-full">
+                  <video
+                    ref={videoRef}
+                    className="max-h-[60vh] max-w-full rounded object-contain"
+                    muted
+                    playsInline
+                  />
+                  {result && (
+                    <img
+                      src={annotatedImage(result)}
+                      alt="live detections marked in green"
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ objectFit: "contain" }}
+                    />
+                  )}
+                  {!result && (
+                    <span className="absolute bottom-2 left-2 rounded bg-ink/75 px-2 py-1 font-mono text-xs text-surface">
+                      waiting for first frame…
+                    </span>
+                  )}
+                  <canvas
+                    ref={overlayRef}
+                    width={640}
+                    height={480}
+                    className="absolute inset-0 h-full w-full cursor-crosshair"
+                    onMouseDown={onZoneDown}
+                    onMouseMove={onZoneMove}
+                    onMouseUp={onZoneUp}
+                    onMouseLeave={onZoneUp}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {result && (
             <>
-              <div className="flex flex-wrap gap-3">
-                <LiveStat label="People" value={result.count} />
-                <LiveStat label="Avg conf" value={result.avg_confidence.toFixed(2)} />
-                <LiveStat label="Inference" value={`${result.inference_time_ms.toFixed(0)} ms`} />
-                {result.zone_count !== null && (
-                  <LiveStat label="In zone" value={result.zone_count} />
-                )}
+              <div className="sheet mt-4 grid grid-cols-3 divide-x divide-line">
+                <div className="px-6 py-4">
+                  <StatsCard label="People in frame" value={result.count} />
+                </div>
+                <div className="px-6 py-4">
+                  <StatsCard
+                    label="Avg confidence"
+                    value={result.avg_confidence.toFixed(2)}
+                  />
+                </div>
+                <div className="px-6 py-4">
+                  <StatsCard
+                    label="Inference"
+                    value={`${result.inference_time_ms.toFixed(0)} ms`}
+                  />
+                </div>
               </div>
 
+              {result.zone_count !== null && (
+                <div className="sheet mt-3 grid grid-cols-2 divide-x divide-line">
+                  <div className="px-6 py-4">
+                    <StatsCard label="Inside zone" value={result.zone_count} />
+                  </div>
+                  <div className="px-6 py-4">
+                    <StatsCard
+                      label="Tracked IDs"
+                      value={result.detections ? result.detections.filter((d) => d.track_id).length : 0}
+                    />
+                  </div>
+                </div>
+              )}
+
               {result.zone_alert && (
-                <p className="px-4 py-2 bg-red-600 text-white rounded font-semibold">
-                  ⚠️ Zone alert — {result.zone_count} people in the restricted zone
-                </p>
+                <div
+                  role="alert"
+                  className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-signal/40 bg-signal-tint px-4 py-3"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-signal text-xs font-bold text-surface">
+                    !
+                  </span>
+                  <p className="text-sm font-medium text-signal">
+                    {result.zone_count} people inside the restricted zone
+                  </p>
+                  {alertThreshold > 0 && (
+                    <span className="ml-auto font-mono text-xs text-signal/80">
+                      threshold {alertThreshold}
+                    </span>
+                  )}
+                </div>
               )}
             </>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function LiveStat({ label, value }) {
-  return (
-    <div className="flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-36">
-      <div>
-        <div className="text-xs text-gray-500 uppercase tracking-wide">{label}</div>
-        <div className="text-lg font-bold text-gray-900">{value}</div>
-      </div>
     </div>
   );
 }
