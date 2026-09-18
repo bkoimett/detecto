@@ -7,7 +7,7 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen">
         <Routes>
           <Route path="/" element={<DetectionView />} />
           <Route path="/history" element={<HistoryView />} />
