@@ -12,11 +12,12 @@
 Backend (`backend/` is a Python package — commands run from the repo root):
 - `backend/main.py` — FastAPI app, CORS, router registration
 - `backend/config.py` — env loading + path resolution
-- `backend/routes/detect.py` — `POST /detect` (inference, boxes, base64 annotated image)
-- `backend/routes/history.py` — `GET /history`, `POST /reset`
+- `backend/routes/detect.py` — `POST /detect` (persisting image inference) + `POST /detect/live` (webcam: tracking, zone alerts, no persistence)
+- `backend/routes/history.py` — `GET /history`, `GET /history/export` (CSV), `GET /stats`, `POST /reset`
 - `backend/models/record.py` — SQLAlchemy `DetectionRecord` model + engine/session (SQLite)
 - `backend/models/schemas.py` — Pydantic response DTOs
 - `backend/utils/preprocessing.py` — decode + resize image to 640×640
+- `backend/utils/tracker.py` — dependency-free `CentroidTracker` (stable IDs + motion trails across live frames)
 - `backend/scratch_detect.py` — standalone YOLO script (person detection on samples)
 - `backend/samples/` — sample test images (frame1–3.jpg)
 - `backend/yolov8n.pt` — model weights (auto-downloaded on first run if absent)
@@ -25,16 +26,20 @@ Backend (`backend/` is a Python package — commands run from the repo root):
 
 Frontend (all commands run inside `frontend/`):
 - `frontend/src/App.jsx` — `BrowserRouter` routes + `<main>` wrapper
-- `frontend/src/pages/DetectionView.jsx` — image upload + detection results (route `/`)
-- `frontend/src/pages/HistoryView.jsx` — history table, min-confidence filter, reset (route `/history`)
+- `frontend/src/pages/DetectionView.jsx` — image upload + detection results + live webcam tab (route `/`)
+- `frontend/src/pages/HistoryView.jsx` — stats panel, history table, min-confidence filter, CSV export, reset (route `/history`)
 - `frontend/src/components/Navbar.jsx` — top nav with `NavLink` active states
 - `frontend/src/components/StatsCard.jsx` — label/value stat card
+- `frontend/src/components/LiveView.jsx` — webcam loop, zone drawing, alert banner, tracking trail display
+- `frontend/src/lib/api.js` — axios API client + `useMock` flag; every request goes through here
+- `frontend/src/lib/mock.js` — mock data generators for all API calls (used when `VITE_USE_MOCK=true`)
 - `frontend/src/main.jsx` — React root (imports only `index.css`)
 - `frontend/src/index.css` — just `@import "tailwindcss"` — no custom tokens
 - `frontend/src/App.css` — leftover Vite scaffold, NOT imported anywhere — never use it
 - `frontend/vite.config.js` — `react()` + `tailwindcss()` plugins
 - `frontend/public/samples/` — demo images served by the app
 - `frontend/eslint.config.js` — ESLint flat config
+- `frontend/vercel.json` — SPA rewrite for static hosting
 
 ## ENVIRONMENT
 
@@ -42,9 +47,18 @@ Root `.env` (read by `backend/config.py` via python-dotenv):
 - `MODEL_PATH` — YOLO weights path (default: `backend/yolov8n.pt`)
 - `CONFIDENCE_THRESHOLD` — detection confidence (default: `0.5`)
 - `DB_PATH` — SQLite file (default: `detections.db` at repo root)
+- `FRONTEND_ORIGINS` — comma-separated CORS allowlist (default: `http://localhost:5173`)
 
 Frontend `frontend/.env`:
 - `VITE_API_URL` — backend base URL (default: `http://localhost:8000`)
+- `VITE_USE_MOCK` — `"true"` runs the whole UI on mock data with no backend
+
+## DEPLOYMENT
+
+- Frontend: Vite static build → Vercel; `frontend/vercel.json` rewrites all paths to `index.html` for SPA routing
+- Backend: `render.yaml` at repo root (Render web service, Python runtime, `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`); SQLite persisted on a 1 GB disk at `/var/data`
+- Set `FRONTEND_ORIGINS` on the deployed backend to include the real Vercel domain (CORS)
+- Set `VITE_API_URL` in Vercel to the deployed backend URL (build-time env)
 
 ## COMMANDS
 
@@ -81,10 +95,14 @@ Frontend `frontend/.env`:
 
 ## API CONVENTIONS
 
-- Frontend base URL comes from `import.meta.env.VITE_API_URL || "http://localhost:8000"` (the `API` const pattern in `DetectionView.jsx` / `HistoryView.jsx`) — don't duplicate or hardcode other URLs
+- Frontend base URL comes from `import.meta.env.VITE_API_URL || "http://localhost:8000"` (the `API` const pattern in `DetectionView.jsx` / `HistoryView.jsx`) — don't duplicate or hardcode other URLs; all requests go through `frontend/src/lib/api.js`
 - `POST /detect` takes `multipart/form-data` field `file` (JPEG/PNG); any other type → `400`
-- `annotated_image_b64` is a bare base64 JPEG — the frontend prepends `data:image/jpeg;base64,`
+- `POST /detect/live` — same `file` field, never persists; query params `zone` = `x1,y1,x2,y2` in 640×640 space, `alert_threshold` (int, people in zone that triggers `zone_alert`); response adds `zone_count`, `zone_alert`, and `track_id` on each detection
+- Tracking (stable IDs + green trails drawn server-side) comes from the singleton `CentroidTracker` in `backend/utils/tracker.py` — state lives across `/detect/live` calls
+- `annotated_image_b64` is a bare base64 JPEG — the frontend prepends `data:image/jpeg;base64,` (or uses `annotatedImage()` from `./lib/api.js`)
 - `GET /history` support: `min_confidence`, `since` (ISO), `limit` query params; rows use SQLite integer `id` and ISO timestamps
+- `GET /history/export` — same params, returns `text/csv` with `Content-Disposition: attachment`
+- `GET /stats` — returns `total_detections`, `total_people`, `avg_confidence`, `avg_inference_time_ms`, `detections_last_hour`, `per_hour` (24h buckets), `busiest_hour`
 - `GET /history` rows keyed by `id` (not `_id`)
 
 ## TESTING

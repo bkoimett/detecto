@@ -28,14 +28,16 @@ All colors are Tailwind default palette utility classes applied inline in JSX. T
 | `text-white` | Text on blue/red buttons, active nav link |
 | `bg-red-600` / `hover:bg-red-700` | Destructive actions (Reset) |
 | `text-red-600` | Error messages |
+| `bg-gray-700` | Stop Camera button |
 | `bg-gray-100` | Table header row |
+| `bg-black/60` | "Waiting for first frame…" overlay pill |
 | `text-gray-500` | Muted/secondary text, empty-state text |
 | `text-gray-700` | Labels |
 | `text-gray-900` | Headings, stat values |
 | `hover:bg-gray-200` | Nav link hover state |
 | `even:bg-gray-50` | Zebra striping on table rows |
-
----
+| `bg-amber-100` / `text-amber-700` | Mock data badge |
+| `border-amber-500` / `text-amber-600` | Clear-zone pill button |
 
 ## Typography
 
@@ -106,11 +108,46 @@ flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-40
 
 - Primary: `px-4 py-1.5 bg-blue-600 text-white rounded font-medium disabled:opacity-50 cursor-pointer`
 - Destructive: `px-3 py-1 bg-red-600 text-white rounded font-medium hover:bg-red-700 cursor-pointer`
+- Export: primary-styled `px-3 py-1` link with `no-underline`, used with `⬇` emoji
 
-### Forms / Inputs
+### Tabs
 
-- File input: plain `<input type="file">` with `text-sm`
-- Number input (min confidence): `border rounded ml-2 px-2 py-1 w-20`
+Section switcher (Image / Live) in Detection View:
+
+```
+flex gap-2 mb-4 border-b
+```
+- Active: `bg-blue-600 text-white`
+- Inactive: `text-gray-600 hover:bg-gray-200`
+- Shared: `px-4 py-2 rounded-t font-medium cursor-pointer`
+
+### Mock badge
+
+Shown when the API layer runs on mock data (`VITE_USE_MOCK=true`):
+
+```
+text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded
+```
+
+### Live stats (LiveView)
+
+Inline stat card, same pattern as `StatsCard` minus the emoji icon:
+`flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-36`
+
+### Bar chart (History View)
+
+`per_hour` stats rendered as a flex bar chart:
+`flex items-end gap-2 h-24` with bars `bg-blue-600 rounded-t` (height % via inline style) and `text-[10px] text-gray-500` hour labels.
+
+---
+
+## Live View
+
+- Camera controls: **Start Camera** (`bg-blue-600`) / **Stop Camera** (`bg-gray-700`)
+- Alert threshold: number input (`border rounded ml-2 px-2 py-1 w-16`)
+- "Clear zone" pill button: `text-xs px-3 py-1 border border-amber-500 text-amber-600 rounded font-medium`
+- Video + annotated-image overlay in a `relative inline-block` container; zone drawing on a 640×480 `<canvas>` (`absolute inset-0 cursor-crosshair`) with orange (`#f59e0b`) zone rect
+- Alert banner: `px-4 py-2 bg-red-600 text-white rounded font-semibold` with ⚠️
 
 ---
 
@@ -118,18 +155,19 @@ flex items-center gap-3 bg-white rounded-lg shadow px-4 py-3 min-w-40
 
 ### Detection View (`/`)
 
-1. `h1` heading ("Detection View")
-2. Upload row: file input + primary **Detect** button (label swaps to "Detecting..." while loading)
-3. Selected-file hint, error message (`text-red-600`)
-4. On result: row of `StatsCard` (People detected 👥, Avg confidence 🎯, Inference time ⏱) then annotated image
-   - Image: `rounded shadow border max-w-full` with src `data:image/jpeg;base64,{result.annotated_image_b64}`
+1. `h1` heading ("Detection View") + optional mock badge
+2. Tab bar: **Image** / **Live**
+3. **Image tab:** file input + primary **Detect** button (label swaps to "Detecting..." while loading); selected-file hint, error message (`text-red-600`); on result a row of `StatsCard` (People detected 👥, Avg confidence 🎯, Inference time ⏱) then the annotated image
+   - Image: `rounded shadow border max-w-full` with src from `annotatedImage()` (`data:image/jpeg;base64,…`)
+4. **Live tab:** `<LiveView />` — webcam loop, zone drawing overlay, tracking trails (drawn server-side into the annotated image), alert banner, live stat chips
 
 ### History View (`/history`)
 
-1. `h1` heading ("History")
-2. Filter row: min-confidence number input + red **Reset** button
-3. Table `w-full border bg-white rounded overflow-hidden` with `bg-gray-100` header and zebra rows, columns: Timestamp, People, Avg Conf, Inference (ms)
-4. Empty state: centered `text-gray-500` "No detections recorded yet."
+1. `h1` heading ("History") + optional mock badge
+2. Stats panel (when loaded): row of `StatsCard` (Total detections 🕵️, Total people 👥, Avg confidence 🎯, Last hour 🕐) + "People per hour" bar chart + busiest-hour note
+3. Filter row: min-confidence number input, **⬇ Export CSV** link (downloads `/history/export`), red **Reset** button
+4. Table `w-full border bg-white rounded overflow-hidden` with `bg-gray-100` header and zebra rows, columns: Timestamp, People, Avg Conf, Inference (ms)
+5. Empty state: centered `text-gray-500` "No detections recorded yet."
 
 ---
 
@@ -149,6 +187,12 @@ Emojis only. Currently in use:
 | 🎯 | Navbar brand, Avg confidence stat |
 | 👥 | People detected stat |
 | ⏱ | Inference time stat |
+| 🕵️ | Total detections stat |
+| 🕐 | Last hour stat |
+| 🎥 | Live tab, Start Camera button |
+| 🖼 | Image tab |
+| ⬇ | Export CSV button |
+| ⚠️ | Zone alert banner |
 
 ---
 
